@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>다크투어 서울 80 · 오디오 도슨트</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ── 색상: 종이 지도와 같은 톤 ───────────────────────────── */
+  :root{
+    --kraft:#C9A56F;      /* 지도 바탕 크라프트지 */
+    --kraft-deep:#A8834F;
+    --paper:#F8F1E2;      /* 카드 종이색 */
+    --ink:#3B2314;        /* 지도 제목 갈색 */
+    --ink-soft:#6B4E36;
+    --line:#E3D2B3;
+    --r-center:#D94A62;   /* 도심권 */
+    --r-nw:#7E5FB0;       /* 서북권 */
+    --r-ne:#EA8A2B;       /* 동북권 */
+    --r-sw:#2E6FB8;       /* 서남권 */
+    --r-se:#2F8C58;       /* 동남권 */
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--kraft);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.55;
+  }
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  .serif{font-family:"Noto Serif KR","Nanum Myeongjo",serif}
+
+  /* ── 입장 화면 ─────────────────────────────────────────── */
+  #gate{
+    position:fixed;inset:0;z-index:50;
+    background:var(--kraft);
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .gate-card{
+    width:100%;max-width:380px;
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:14px;
+    padding:34px 26px 28px;
+    box-shadow:0 12px 30px rgba(59,35,20,.25);
+    text-align:center;
+  }
+  .stamp{
+    display:inline-block;
+    font-size:12px;letter-spacing:.18em;font-weight:700;
+    color:var(--paper);background:var(--ink);
+    padding:5px 12px;border-radius:999px;
+    margin-bottom:18px;
+  }
+  .gate-card h1{
+    font-size:34px;line-height:1.15;font-weight:700;letter-spacing:-.01em;
+  }
+  .gate-card h1 small{display:block;font-size:14px;font-weight:600;letter-spacing:.2em;margin-bottom:8px;color:var(--ink-soft)}
+  .mugunghwa{width:64px;height:64px;margin:14px auto 6px;display:block}
+  .gate-card p{font-size:14px;color:var(--ink-soft);margin:10px 0 22px}
+  .code-row{display:flex;gap:8px}
+  .code-row input{
+    flex:1;min-width:0;
+    font:inherit;font-size:18px;letter-spacing:.12em;text-align:center;
+    padding:13px 12px;border-radius:10px;
+    border:1.5px solid var(--kraft-deep);background:#fff;color:var(--ink);
+  }
+  .code-row input:focus{outline:3px solid rgba(217,74,98,.35);border-color:var(--r-center)}
+  .code-row button{
+    padding:0 18px;border-radius:10px;
+    background:var(--ink);color:var(--paper);font-weight:700;font-size:15px;
+  }
+  .gate-err{font-size:13px;color:var(--r-center);min-height:20px;margin-top:10px;font-weight:500}
+
+  /* ── 상단 ─────────────────────────────────────────────── */
+  header{
+    position:sticky;top:0;z-index:20;
+    background:var(--kraft);
+    padding:14px 16px 10px;
+    border-bottom:2px solid var(--ink);
+  }
+  .brand{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .brand h2{font-size:22px;font-weight:700;letter-spacing:-.01em}
+  .brand h2 span{font-size:12px;letter-spacing:.16em;font-weight:600;color:var(--ink-soft);margin-right:8px}
+  .brand .who{font-size:11px;color:var(--ink-soft);letter-spacing:.08em;white-space:nowrap}
+  .search{
+    margin-top:10px;display:flex;align-items:center;gap:8px;
+    background:var(--paper);border:1.5px solid var(--ink);border-radius:10px;padding:9px 12px;
+  }
+  .search svg{flex:none;opacity:.7}
+  .search input{flex:1;min-width:0;border:0;background:none;font:inherit;font-size:15px;color:var(--ink)}
+  .search input:focus{outline:none}
+  .search input::placeholder{color:#9B8368}
+  .regions{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .regions::-webkit-scrollbar{display:none}
+  .chip{
+    flex:none;font-size:13px;font-weight:600;
+    padding:6px 12px;border-radius:999px;
+    background:var(--paper);border:1.5px solid var(--ink);color:var(--ink);
+  }
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+  .chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+
+  /* ── 목록 ─────────────────────────────────────────────── */
+  main{padding:12px 12px 120px}
+  .count{font-size:12px;color:var(--ink-soft);margin:2px 4px 8px;letter-spacing:.04em}
+  .card{
+    background:var(--paper);
+    border:1.5px solid var(--ink);
+    border-radius:12px;
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  .card-head{
+    width:100%;display:flex;align-items:center;gap:12px;
+    padding:12px 12px 12px 12px;text-align:left;
+  }
+  .num{
+    flex:none;width:36px;height:36px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:15px;
+    border:2px solid #fff;box-shadow:0 0 0 1.5px var(--ink);
+  }
+  .card-title{flex:1;min-width:0}
+  .card-title .name{font-size:16px;font-weight:700;line-height:1.3}
+  .card-title .meta{font-size:12px;color:var(--ink-soft);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-title .meta b{font-weight:600;color:var(--ink);margin-right:6px}
+  .has-audio{flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;background:var(--ink);color:var(--paper);letter-spacing:.04em}
+  .no-audio{flex:none;font-size:11px;color:#9B8368;letter-spacing:.04em}
+  .card-body{display:none;border-top:1.5px dashed var(--line);padding:14px 14px 16px}
+  .card.open .card-body{display:block}
+
+  /* 플레이어 */
+  .player{background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:12px}
+  .player-row{display:flex;align-items:center;gap:12px}
+  .btn-play{
+    flex:none;width:52px;height:52px;border-radius:50%;
+    background:var(--ink);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .btn-play:active{transform:scale(.96)}
+  .btn-skip{flex:none;width:40px;height:40px;border-radius:50%;background:var(--paper);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink-soft)}
+  .prog{flex:1;min-width:0}
+  .prog input[type=range]{width:100%;accent-color:var(--ink);height:24px}
+  .times{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .speed{margin-left:auto;font-size:12px;font-weight:700;border:1.5px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--ink-soft)}
+
+  .script{margin-top:14px}
+  .script .lbl{font-size:11px;letter-spacing:.16em;color:var(--ink-soft);font-weight:700;margin-bottom:6px}
+  .script p{font-size:15px;line-height:1.75;margin-bottom:10px;word-break:keep-all}
+  .script p:last-child{margin-bottom:0}
+  .script .empty{font-size:13px;color:#9B8368;background:#fff;border:1.5px dashed var(--line);border-radius:8px;padding:12px;text-align:center}
+
+  .links{display:flex;gap:8px;margin-top:14px}
+  .links a{
+    flex:1;text-align:center;text-decoration:none;
+    font-size:13px;font-weight:700;padding:10px 8px;border-radius:8px;
+    border:1.5px solid var(--ink);color:var(--ink);background:#fff;
+  }
+  .links a.primary{background:var(--ink);color:var(--paper)}
+
+  /* ── 하단 재생바 ───────────────────────────────────────── */
+  #bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:var(--ink);color:var(--paper);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    display:none;align-items:center;gap:12px;
+    box-shadow:0 -6px 20px rgba(59,35,20,.35);
+  }
+  #bar.show{display:flex}
+  #bar .num{box-shadow:0 0 0 1.5px var(--paper);width:32px;height:32px;font-size:13px}
+  #bar .t{flex:1;min-width:0}
+  #bar .t .n{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #bar .t .s{font-size:11px;opacity:.75;font-variant-numeric:tabular-nums}
+  #bar button{flex:none;width:40px;height:40px;border-radius:50%;background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center}
+  #bar .barline{position:absolute;left:0;top:0;height:2px;background:var(--r-center);width:0}
+
+  footer{padding:24px 16px 0;text-align:center;font-size:11px;color:var(--ink-soft);line-height:1.7}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ────────── 입장 화면 ────────── -->
+<div id="gate">
+  <form class="gate-card" id="gateForm" autocomplete="off">
+    <div class="stamp">구매자 전용</div>
+    <h1 class="serif"><small>광복 80주년 리미티드 에디션</small>다크투어 서울 80</h1>
+    <svg class="mugunghwa" viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <radialGradient id="petal" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="46">
+          <stop offset="0%" stop-color="#C8103C"/>
+          <stop offset="30%" stop-color="#E8577D"/>
+          <stop offset="62%" stop-color="#F6A3BC"/>
+          <stop offset="100%" stop-color="#FCE3EA"/>
+        </radialGradient>
+      </defs>
+      <g transform="translate(50 52)">
+        <g id="p"><path d="M0 0 C 15 -5, 27 -20, 22 -36 C 18 -48, -18 -48, -22 -36 C -27 -20, -15 -5, 0 0 Z" fill="url(#petal)" stroke="#E0526F" stroke-width="1.1" stroke-linejoin="round"/></g>
+        <use href="#p" transform="rotate(72)"/>
+        <use href="#p" transform="rotate(144)"/>
+        <use href="#p" transform="rotate(216)"/>
+        <use href="#p" transform="rotate(288)"/>
+        <circle r="6" fill="#B30C34"/>
+        <path d="M0 0 L 6 -19" stroke="#F3B84A" stroke-width="3.2" stroke-linecap="round"/>
+        <circle cx="6.5" cy="-20" r="3.4" fill="#FFD76A"/>
+        <circle cx="3" cy="-11" r="1.7" fill="#FFD76A"/>
+        <circle cx="1.5" cy="-6" r="1.4" fill="#FFD76A"/>
+      </g>
+    </svg>
+    <p>오디오 도슨트를 들으려면<br>지도와 함께 받으신 입장 코드를 넣어주세요.</p>
+    <div class="code-row">
+      <input id="code" type="text" inputmode="text" placeholder="입장 코드" aria-label="입장 코드">
+      <button type="submit">들어가기</button>
+    </div>
+    <div class="gate-err" id="gateErr"></div>
+  </form>
+</div>
+
+<!-- ────────── 본문 ────────── -->
+<header>
+  <div class="brand">
+    <h2 class="serif"><span>오디오 도슨트</span>다크투어 서울 80</h2>
+    <div class="who">역사해설가 안지영</div>
+  </div>
+  <label class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="지도 번호나 장소 이름으로 찾기">
+  </label>
+  <div class="regions" id="regions"></div>
+</header>
+
+<main>
+  <div class="count" id="count"></div>
+  <div id="list"></div>
+  <footer>인문예술콘텐츠랩 히스토리안<br>본 콘텐츠는 구매자 본인의 이용을 위해 제공됩니다. 무단 공유와 배포를 삼가주세요.</footer>
+</main>
+
+<!-- ────────── 하단 재생바 ────────── -->
+<div id="bar">
+  <div class="barline" id="barline"></div>
+  <div class="num" id="barNum"></div>
+  <div class="t"><div class="n" id="barName"></div><div class="s" id="barTime"></div></div>
+  <button id="barBtn" aria-label="재생/일시정지"></button>
+</div>
+
+<audio id="audio" preload="metadata"></audio>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   여기부터 직접 고치시는 부분입니다.
+   1) ACCESS_CODE : 구매자에게 보낼 입장 코드. 펀딩 회차마다 바꾸세요.
+   2) PLACES      : 80곳 목록. audio 에 mp3 파일 이름을, script 에 대본을 넣으세요.
+                    audio 가 비어 있으면 "준비 중"으로 표시됩니다.
+                    script 는 문단마다 배열 항목 하나씩입니다.
+   ═══════════════════════════════════════════════════════════════ */
+const ACCESS_CODE = "광복80";
+
+const REGIONS = {
+  center:{label:"도심권", color:"var(--r-center)"},
+  nw:{label:"서북권", color:"var(--r-nw)"},
+  ne:{label:"동북권", color:"var(--r-ne)"},
+  sw:{label:"서남권", color:"var(--r-sw)"},
+  se:{label:"동남권", color:"var(--r-se)"},
+};
+
+const PLACES = [
+  {no:1, region:"center", type:"건축물", name:"경복궁 건청궁", addr:"사직로 161 경복궁 내",
+   audio:"audio/01.mp3",
+   script:[
+     "예시 대본입니다. 이 자리에 실제 해설 원고를 문단 단위로 넣어주세요.",
+     "건청궁은 1873년 고종이 경복궁 북쪽에 지은 별궁으로, 1895년 을미사변 당시 명성황후가 시해된 곳입니다.",
+     "현재 건물은 2007년에 복원된 것입니다."
+   ]},
+  {no:2, region:"center", type:"터/표지석", name:"조선어학회 회관 터", addr:"화동 129-1", audio:"", script:[]},
+  {no:3, region:"center", type:"터/건축물(복원)", name:"중앙고보 숙직실 터(삼일기념관)", addr:"창덕궁길 164 중앙고등학교 내", audio:"", script:[]},
+  {no:4, region:"center", type:"건축물", name:"창덕궁 흥복헌", addr:"율곡로 99 창덕궁 내", audio:"", script:[]},
+  {no:5, region:"center", type:"터/표지석", name:"송학선 의사 의거 터", addr:"와룡동 3-2 창덕궁 금호문 앞", audio:"", script:[]},
+  {no:6, region:"center", type:"건축물", name:"옛 경성제국대학 본관", addr:"동숭길 3 한국문화예술위원회", audio:"", script:[]},
+  {no:7, region:"center", type:"건축물", name:"천도교 중앙대교당", addr:"삼일대로 457", audio:"", script:[]},
+  {no:8, region:"center", type:"터/표지석", name:"이종일 집 터(독립선언서 배포지)", addr:"삼일대로 461", audio:"", script:[]},
+  {no:9, region:"center", type:"터/표지석", name:"보성사 터", addr:"우정국로 55 조계사 대웅전 앞마당", audio:"", script:[]},
+  {no:10, region:"center", type:"건축물", name:"조선일보·조선중앙일보 옛 사옥", addr:"우정국로 38 NH농협은행 종로금융센터", audio:"", script:[]},
+  {no:11, region:"center", type:"터/표지석", name:"민영환 자결 터", addr:"인사동5길 41 하나빌딩", audio:"", script:[]},
+  {no:12, region:"center", type:"터/표지석", name:"태화관 터(독립선언광장)", addr:"인사동5길 29 태화빌딩 앞", audio:"", script:[]},
+  {no:13, region:"center", type:"건축물", name:"승동교회", addr:"인사동 137", audio:"", script:[]},
+  {no:14, region:"center", type:"장소/건축물", name:"탑골공원", addr:"종로2가 38", audio:"", script:[]},
+  {no:15, region:"center", type:"터/표지석", name:"6·10 독립만세 선창 터(파자교 터)", addr:"돈화문로 26", audio:"", script:[]},
+  {no:16, region:"center", type:"터/표지석", name:"신간회 본부 터", addr:"종로 104", audio:"", script:[]},
+  {no:17, region:"center", type:"터/표지석", name:"종로경찰서 터(김상옥 의거지)", addr:"종로 65", audio:"", script:[]},
+  {no:18, region:"center", type:"터/표지석", name:"보신각 앞 3·1운동 기념 터 및 한성정부 선포지", addr:"종로 54 보신각 앞", audio:"", script:[]},
+  {no:19, region:"center", type:"전시관", name:"대한민국역사박물관", addr:"세종대로 198", audio:"", script:[]},
+  {no:20, region:"center", type:"전시관", name:"서울역사박물관", addr:"새문안로 55", audio:"", script:[]},
+  {no:21, region:"center", type:"건축물/전시관", name:"경교장", addr:"새문안로 29", audio:"", script:[]},
+  {no:22, region:"center", type:"터/표지석", name:"어니스트 베델 집 터", addr:"홍파동 2-2 월암근린공원 내", audio:"", script:[]},
+  {no:23, region:"center", type:"건축물/전시관", name:"이회영 기념관", addr:"사직로8길 15", audio:"", script:[]},
+  {no:24, region:"center", type:"건축물/전시관", name:"딜쿠샤(앨버트 테일러 가옥)", addr:"사직로2길 17", audio:"", script:[]},
+  {no:25, region:"center", type:"전시관", name:"독립운동가 가족을 생각하는 작은 집", addr:"통일로 230", audio:"", script:[]},
+  {no:26, region:"center", type:"건축물/공원", name:"정동공원(구 러시아 공사관)", addr:"정동길 21-18", audio:"", script:[]},
+  {no:27, region:"center", type:"건축물/전시관", name:"덕수궁 돈덕전", addr:"세종대로 99 덕수궁 내", audio:"", script:[]},
+  {no:28, region:"center", type:"건축물/전시관", name:"덕수궁 중명전", addr:"정동길 41-11", audio:"", script:[]},
+  {no:29, region:"center", type:"건축물/전시관", name:"이화박물관(심슨기념관)", addr:"정동길 26 이화여자고등학교 내", audio:"", script:[]},
+  {no:30, region:"center", type:"건축물", name:"정동제일교회", addr:"정동길 46", audio:"", script:[]},
+  {no:31, region:"center", type:"터/표지석", name:"석 동화약방 터(대한민국임시정부 서울연통부)", addr:"순화동 6-13", audio:"", script:[]},
+  {no:32, region:"center", type:"건축물/전시관", name:"배재학당역사박물관(구 배재학당 동관)", addr:"서소문로11길 19", audio:"", script:[]},
+  {no:33, region:"center", type:"터/건축물", name:"옛 서울시립미술관(구 대법원·경성재판소)", addr:"덕수궁길 61", audio:"", script:[]},
+  {no:34, region:"center", type:"터/표지석", name:"정미의병 발원 터", addr:"세종대로9길 42", audio:"", script:[]},
+  {no:35, region:"center", type:"전시관", name:"손기정 기념관", addr:"손기정로 101-4", audio:"", script:[]},
+  {no:36, region:"center", type:"터/표지석", name:"3·1운동 만세시위 기념터(남대문역 전)", addr:"통일로 21 서울역 고객주차장 앞", audio:"", script:[]},
+  {no:37, region:"center", type:"터/건축물", name:"문화역서울284(구 경성역)", addr:"청파로 1", audio:"", script:[]},
+  {no:38, region:"center", type:"터/기념물", name:"강우규 의사 항일의거 터", addr:"통일로 1 문화역서울 앞 광장", audio:"", script:[]},
+  {no:39, region:"center", type:"건축물/표지석", name:"경성부민관 폭탄 의거지", addr:"세종대로 125 서울시의회", audio:"", script:[]},
+  {no:40, region:"center", type:"터/건축물", name:"황궁우(환구단 터)", addr:"소공로 112", audio:"", script:[]},
+  {no:41, region:"center", type:"터/기념물", name:"나석주 의사 의거 터(동양척식주식회사 터)", addr:"을지로 66 하나은행 본점 앞", audio:"", script:[]},
+  {no:42, region:"center", type:"터/표지석", name:"이재명 의사 의거 터", addr:"명동길 80 가톨릭회관 앞", audio:"", script:[]},
+  {no:43, region:"center", type:"건축물", name:"신세계백화점 본점(구 미츠코시백화점 경성점)", addr:"소공로 63", audio:"", script:[]},
+  {no:44, region:"center", type:"전시관", name:"안중근의사기념관", addr:"소월로 91", audio:"", script:[]},
+  {no:45, region:"center", type:"터/표지석", name:"조선신궁 터(한양도성유적전시관)", addr:"소월로 99", audio:"", script:[]},
+  {no:46, region:"center", type:"터/표지석", name:"김익상 의거 터(남산 조선총독부 터)", addr:"소파로 126 서울창조산업센터 입구", audio:"", script:[]},
+  {no:47, region:"center", type:"터/표지석", name:"통감부 터(일본군 위안부 기억의 터)", addr:"퇴계로26가길 6", audio:"", script:[]},
+  {no:48, region:"center", type:"터/공원/표지석", name:"장충단공원(박문사 터)", addr:"동호로 257-10", audio:"", script:[]},
+  {no:49, region:"center", type:"묘역", name:"효창공원(독립운동가 묘역)", addr:"임정로 26", audio:"", script:[]},
+  {no:50, region:"center", type:"전시관", name:"백범김구기념관", addr:"임정로 26", audio:"", script:[]},
+  {no:51, region:"center", type:"전시관", name:"이봉창의사 역사울림관", addr:"백범로 281-9", audio:"", script:[]},
+  {no:52, region:"center", type:"건축물/표지석", name:"용산역사박물관", addr:"한강대로14길 35-29", audio:"", script:[]},
+  {no:53, region:"center", type:"전시관", name:"식민지역사박물관", addr:"청파로47다길 27", audio:"", script:[]},
+
+  {no:54, region:"nw", type:"건축물/전시관", name:"진관사 칠성각", addr:"진관길 73 진관사 내", audio:"", script:[]},
+  {no:55, region:"nw", type:"공원/장소", name:"서대문독립공원(독립문·독립관)", addr:"현저동 941", audio:"", script:[]},
+  {no:56, region:"nw", type:"건축물", name:"서대문형무소역사관", addr:"통일로 251", audio:"", script:[]},
+  {no:57, region:"nw", type:"전시관", name:"국립대한민국임시정부기념관", addr:"통일로 279-24", audio:"", script:[]},
+  {no:58, region:"nw", type:"건축물/전시관", name:"연세대학교 윤동주기념관(핀슨관)", addr:"연세로 50", audio:"", script:[]},
+  {no:59, region:"nw", type:"묘역/전시관", name:"양화진 외국인 선교사 묘역", addr:"양화진길 46", audio:"", script:[]},
+  {no:60, region:"nw", type:"전시관", name:"전쟁과여성인권박물관", addr:"월드컵북로11길 20", audio:"", script:[]},
+  {no:61, region:"nw", type:"터/표지석", name:"경성감옥 터", addr:"공덕동 105-10", audio:"", script:[]},
+  {no:62, region:"nw", type:"터/표지석", name:"마포 전차종점 3·1운동 만세시위지", addr:"마포대로 20", audio:"", script:[]},
+
+  {no:63, region:"ne", type:"건축물/전시관", name:"만해 한용운 심우장", addr:"성북로29길 24", audio:"", script:[]},
+  {no:64, region:"ne", type:"전시관", name:"문화공간 이육사", addr:"종암로21가길 36-1", audio:"", script:[]},
+  {no:65, region:"ne", type:"기념물", name:"뚝섬 만세운동 기념비", addr:"성수동1가", audio:"", script:[]},
+  {no:66, region:"ne", type:"건축물", name:"봉황각", addr:"우이동 26", audio:"", script:[]},
+  {no:67, region:"ne", type:"묘역/장소", name:"순국선열 묘역 순례길", addr:"수유동 산73-10", audio:"", script:[]},
+  {no:68, region:"ne", type:"전시관", name:"근현대사기념관", addr:"4.19로 114", audio:"", script:[]},
+  {no:69, region:"ne", type:"공원/기념물", name:"창동역사문화공원", addr:"도봉로 552", audio:"", script:[]},
+  {no:70, region:"ne", type:"기념물", name:"의병대장 유세열 기념비", addr:"덕릉로79길 35", audio:"", script:[]},
+  {no:71, region:"ne", type:"묘역/전시관", name:"중랑망우공간", addr:"망우로91길 2 망우역사문화공원", audio:"", script:[]},
+  {no:72, region:"ne", type:"건축물", name:"건국대학교박물관(구 서북학회회관)", addr:"능동로 120 건국대학교 교내", audio:"", script:[]},
+
+  {no:73, region:"sw", type:"묘역", name:"국립현충원 독립유공자 묘역", addr:"동작동 222-17", audio:"", script:[]},
+  {no:74, region:"sw", type:"터/표지석", name:"대한독립 만세운동 시위터", addr:"양평동2길 10", audio:"", script:[]},
+  {no:75, region:"sw", type:"공원/기념물", name:"2·8독립선언 기념공원", addr:"가양동 422-13", audio:"", script:[]},
+  {no:76, region:"sw", type:"장소/전시관", name:"궁산땅굴역사전시관", addr:"양천로49길 106", audio:"", script:[]},
+
+  {no:77, region:"se", type:"전시관", name:"매헌 윤봉길 의사 기념관", addr:"매헌로 26", audio:"", script:[]},
+  {no:78, region:"se", type:"전시관", name:"심산 김창숙 기념관", addr:"사평대로 55", audio:"", script:[]},
+  {no:79, region:"se", type:"묘역/전시관", name:"도산 안창호 기념관", addr:"도산대로45길 20", audio:"", script:[]},
+  {no:80, region:"se", type:"광장/표지석", name:"삼일리 만세광장", addr:"삼일길5길 1 수변공원", audio:"", script:[]},
+];
+/* ═════════════════ 여기까지 수정 영역 ═════════════════ */
+
+
+/* ── 입장 ─────────────────────────────────────────────── */
+const gate = document.getElementById('gate');
+document.getElementById('gateForm').addEventListener('submit', e=>{
+  e.preventDefault();
+  const v = document.getElementById('code').value.trim();
+  if (v === ACCESS_CODE){ gate.style.display='none'; }
+  else { document.getElementById('gateErr').textContent = '코드가 맞지 않습니다. 지도에 적힌 코드를 다시 확인해주세요.'; }
+});
+
+/* ── 상태 ─────────────────────────────────────────────── */
+let region = 'all';
+let query = '';
+let current = null;           // 지금 재생 중인 place
+const audio = document.getElementById('audio');
+const esc = s => String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = s => { if(!isFinite(s)) return '0:00'; s=Math.floor(s); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+const ICON_PLAY  = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+const ICON_PAUSE = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+/* ── 권역 칩 ───────────────────────────────────────────── */
+const regionsEl = document.getElementById('regions');
+function renderChips(){
+  const all = `<button class="chip" data-r="all" aria-pressed="${region==='all'}">전체</button>`;
+  const rest = Object.entries(REGIONS).map(([k,r])=>
+    `<button class="chip" data-r="${k}" aria-pressed="${region===k}"><span class="dot" style="background:${r.color}"></span>${r.label}</button>`).join('');
+  regionsEl.innerHTML = all+rest;
+}
+regionsEl.addEventListener('click', e=>{
+  const b = e.target.closest('.chip'); if(!b) return;
+  region = b.dataset.r; renderChips(); renderList();
+});
+document.getElementById('q').addEventListener('input', e=>{ query = e.target.value.trim(); renderList(); });
+
+/* ── 목록 ─────────────────────────────────────────────── */
+const listEl = document.getElementById('list');
+function visible(){
+  return PLACES.filter(p=>{
+    if(region!=='all' && p.region!==region) return false;
+    if(!query) return true;
+    return String(p.no)===query || p.name.includes(query) || (p.addr||'').includes(query);
+  });
+}
+function renderList(){
+  const items = visible();
+  document.getElementById('count').textContent = items.length + '곳';
+  listEl.innerHTML = items.map(p=>{
+    const c = REGIONS[p.region].color;
+    const badge = p.audio ? `<span class="has-audio">오디오</span>` : `<span class="no-audio">준비 중</span>`;
+    const playing = current && current.no===p.no;
+    const scriptHtml = p.script && p.script.length
+      ? p.script.map(t=>`<p>${esc(t)}</p>`).join('')
+      : `<div class="empty">이 장소의 해설 원고는 준비 중입니다.</div>`;
+    const qname = encodeURIComponent('서울 '+p.name);
+    return `
+    <article class="card${playing?' open':''}" id="card-${p.no}">
+      <button class="card-head" data-no="${p.no}" aria-expanded="${playing}">
+        <div class="num" style="background:${c}">${p.no}</div>
+        <div class="card-title">
+          <div class="name">${esc(p.name)}</div>
+          <div class="meta"><b>${esc(p.type)}</b>${esc(p.addr||'')}</div>
+        </div>
+        ${badge}
+      </button>
+      <div class="card-body">
+        ${p.audio ? `
+        <div class="player" data-no="${p.no}">
+          <div class="player-row">
+            <button class="btn-skip" data-act="back" aria-label="15초 뒤로">-15</button>
+            <button class="btn-play" data-act="toggle" aria-label="재생">${playing && !audio.paused ? ICON_PAUSE : ICON_PLAY}</button>
+            <button class="btn-skip" data-act="fwd" aria-label="15초 앞으로">+15</button>
+            <div class="prog">
+              <input type="range" min="0" max="1000" value="0" data-act="seek" aria-label="재생 위치">
+              <div class="times"><span class="cur">0:00</span><span class="dur">0:00</span></div>
+            </div>
+          </div>
+        </div>` : ''}
+        <div class="script">
+          <div class="lbl">해설 원고</div>
+          ${scriptHtml}
+        </div>
+        <div class="links">
+          <a class="primary" href="https://map.kakao.com/link/search/${qname}" target="_blank" rel="noopener">카카오맵에서 열기</a>
+          <a href="https://map.naver.com/p/search/${qname}" target="_blank" rel="noopener">네이버지도에서 열기</a>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+  syncPlayerUI();
+}
+
+/* 카드 펼치기 */
+listEl.addEventListener('click', e=>{
+  const head = e.target.closest('.card-head');
+  if(head){
+    const card = head.parentElement;
+    const open = card.classList.toggle('open');
+    head.setAttribute('aria-expanded', open);
+    return;
+  }
+  const act = e.target.closest('[data-act]'); if(!act) return;
+  const no = Number(act.closest('.player').dataset.no);
+  const p = PLACES.find(x=>x.no===no);
+  if(act.dataset.act==='toggle') toggle(p);
+  if(act.dataset.act==='back'){ if(current&&current.no===no) audio.currentTime=Math.max(0,audio.currentTime-15); }
+  if(act.dataset.act==='fwd'){ if(current&&current.no===no) audio.currentTime=Math.min(audio.duration||0,audio.currentTime+15); }
+});
+listEl.addEventListener('input', e=>{
+  const r = e.target.closest('[data-act="seek"]'); if(!r) return;
+  const no = Number(r.closest('.player').dataset.no);
+  if(current && current.no===no && audio.duration) audio.currentTime = r.value/1000*audio.duration;
+});
+
+/* ── 재생 ─────────────────────────────────────────────── */
+function toggle(p){
+  if(current && current.no===p.no){
+    audio.paused ? audio.play() : audio.pause();
+    return;
+  }
+  current = p;
+  audio.src = p.audio;
+  audio.play().catch(()=>{});
+  document.getElementById('barNum').textContent = p.no;
+  document.getElementById('barNum').style.background = REGIONS[p.region].color;
+  document.getElementById('barName').textContent = p.name;
+  document.getElementById('bar').classList.add('show');
+  syncPlayerUI();
+}
+function syncPlayerUI(){
+  document.querySelectorAll('.player').forEach(pl=>{
+    const mine = current && Number(pl.dataset.no)===current.no;
+    const btn = pl.querySelector('.btn-play');
+    btn.innerHTML = (mine && !audio.paused) ? ICON_PAUSE : ICON_PLAY;
+    btn.setAttribute('aria-label', (mine && !audio.paused) ? '일시정지' : '재생');
+    if(!mine){ pl.querySelector('[data-act="seek"]').value=0; pl.querySelector('.cur').textContent='0:00'; pl.querySelector('.dur').textContent='0:00'; }
+  });
+  document.getElementById('barBtn').innerHTML = audio.paused ? ICON_PLAY : ICON_PAUSE;
+}
+audio.addEventListener('play', syncPlayerUI);
+audio.addEventListener('pause', syncPlayerUI);
+audio.addEventListener('ended', syncPlayerUI);
+audio.addEventListener('timeupdate', ()=>{
+  if(!current) return;
+  const pl = document.querySelector(`.player[data-no="${current.no}"]`);
+  const pct = audio.duration ? audio.currentTime/audio.duration : 0;
+  if(pl){
+    pl.querySelector('[data-act="seek"]').value = Math.round(pct*1000);
+    pl.querySelector('.cur').textContent = fmt(audio.currentTime);
+    pl.querySelector('.dur').textContent = fmt(audio.duration);
+  }
+  document.getElementById('barTime').textContent = fmt(audio.currentTime)+' / '+fmt(audio.duration);
+  document.getElementById('barline').style.width = (pct*100)+'%';
+});
+document.getElementById('barBtn').addEventListener('click', ()=>{ if(current) toggle(current); });
+document.getElementById('bar').addEventListener('click', e=>{
+  if(e.target.closest('button') || !current) return;
+  const card = document.getElementById('card-'+current.no);
+  if(card){ card.classList.add('open'); card.scrollIntoView({behavior:'smooth',block:'start'}); }
+});
+
+renderChips();
+renderList();
+</script>
+</body>
+</html>
